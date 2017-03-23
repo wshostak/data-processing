@@ -1,0 +1,22 @@
+{
+  "name": "data-processing",
+  "license": "BSD-3-Clause",
+  "version": "0.1.0",
+  "main": "main.js",
+  "dependencies": {
+    "bower": "latest",
+    "d3": "^4.7.2",
+    "electron": "^1.6.1",
+    "lodash": "^4.17.4",
+    "xlsx": "^0.9.1"
+  },
+  "devDependencies": {
+    "eslint": "^3.12.0",
+    "eslint-config-google": "^0.7.1",
+    "eslint-plugin-html": "^1.7.0"
+  },
+  "scripts": {
+    "lint": "eslint . --ext js,html --ignore-path .gitignore",
+    "test": "npm run lint && polymer test"
+  }
+}

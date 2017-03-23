@@ -1,0 +1,1 @@
+{"title":"test","group_by":"Cost Center","column":[{"label":"test","group":[{"rule":[{"column":"Account Number","logic":"contains","string_select":"786080835-00017","string":"786080835-00017"}]}],"logic":"equals","result":"Bill Cycle Date"}]}
