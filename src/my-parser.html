@@ -9,6 +9,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 -->
 
 <link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-a11y-keys-behavior/iron-a11y-keys-behavior.html">
+<link rel="import" href="../bower_components/vaadin-upload/vaadin-upload.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
 <link rel="import" href="shared-styles.html">
 
 <dom-module id="my-parser">
@@ -21,17 +25,135 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
     </style>
 
-    <div class="card">
-      <div class="circle">P</div>
-      <h1>Parser</h1>
-      <p>Ea duis bonorum nec, falli paulo aliquid ei eum.</p>
-      <p>Id nam odio natum malorum, tibique copiosae expetenda mel ea.Detracto suavitate repudiandae no eum. Id adhuc minim soluta nam.Id nam odio natum malorum, tibique copiosae expetenda mel ea.</p>
-    </div>
+    <paper-card>
+      <div class="card-content">
+        <div class="flexbox-container">
+          <div class="circle">P</div>
+          <div>
+              <h1>Parser</h1>
+            <p>
+              Upload a Carrier Parser JSON file.
+            </p>
+          </div>
+        </div>
+        <vaadin-upload
+          id="upload"
+          on-upload-before="_uploadBefore"
+          max-files="1"
+          accept="application/json"
+        >
+        </vaadin-upload>
+      </div>
+      <div class="card-actions">
+        <paper-button on-click="_backToUpload">Upload new carrier data file</paper-button>
+      </div>
+    </paper-card>
   </template>
 
   <script>
     Polymer({
       is: 'my-parser',
-    });
+      behaviors: [
+        Polymer.IronA11yKeysBehavior
+      ],
+      properties: {
+        pressed: {
+          type: String,
+          readOnly: true,
+          value: ''
+        },
+        boundKeys: {
+          type: Array,
+          value: function() {
+            return Object.keys(this.keyBindings).join(' ').split(' ');
+          }
+        },
+        preventDefault: {
+          type: Boolean,
+          value: true,
+          notify: true
+        },
+        keyEventTarget: {
+          type: Object,
+          value: function() {
+            return document.body;
+          }
+        }
+      },
+      _onKeydown: function(event) {
+        window.location.hash = '#/edit';
+      },
+       keyBindings: {
+        'control+d': '_onKeydown' // same as 'space:keydown'
+      },
+      _uploadBefore: function (event) {
+        // Prevent AJAX request
+        event.preventDefault();
+
+        var file = event.detail.file;
+        var fileIndex = this.$.upload.files.indexOf(file);
+        var reader = new FileReader();
+  
+        reader.fileName = file.name;
+        reader.readAsText(file);
+  
+        reader.onload = function(event) {
+  
+          file.indeterminate = file.uploading = false;
+          file.status = '';
+          file.complete = true;
+          file.text = event.target.result;
+          file.response = event.target.result;
+
+          this._fileUploaded(file);
+        }.bind(this);
+
+        // Update UI
+        this.$.upload.set(['files', fileIndex, 'progress'], 100);
+        this.$.upload.set(['files', fileIndex, 'complete'], true);
+
+        // Fire event
+        this.fire('file-received', {file: file});
+      },
+      _backToUpload: function(event) {
+        window.history.pushState({}, null, window.location.pathname + '#/upload');
+        window.dispatchEvent(new CustomEvent('location-changed'));  
+      },
+      _fileUploaded: function (file) {
+
+        window.location.hash = '#/output';
+        window.DP.parser = JSON.parse(file.text);
+
+// Hack for now to see timing.
+
+        var output = [],
+            output_row = {};
+            input = DP.carrier.data.account_number;
+
+        for (var account_number in input) {
+      
+          if (input.hasOwnProperty(account_number)) {
+
+            for (var phone_number in account_number) {
+          
+              if (account_number.hasOwnProperty(phone_number)) {
+
+                output_row["Phone Number"] = phone_number[0]["Wireless Number"].replace(/[^0-9]/g, '')
+                output_row["Account #"] = phone_number[0]["Account Number"].replace(/[^0-9]/g, '')
+
+                phone_number.forEach(function () {
+
+                });
+              }
+            }
+          }
+        }
+
+        window.DP.carrier.output = output;
+
+//ToDo: only plan name uses case in output.
+console.log("Script time: " + window.scriptTimer() + "ms");
+      }
+     });
   </script>
 </dom-module>

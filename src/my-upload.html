@@ -10,6 +10,8 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
 <link rel="import" href="../bower_components/polymer/polymer.html">
 <link rel="import" href="../bower_components/vaadin-upload/vaadin-upload.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-card/paper-card.html">
 <link rel="import" href="shared-styles.html">
 
 <dom-module id="my-upload">
@@ -21,21 +23,270 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       }
     </style>
 
-    <div class="card">
-      <div class="circle">U</div>
-      <h1>Upload</h1>
-      <vaadin-upload
-        max-files="1"
-        accept="text/*"
-        method="local"
-      >
-      </vaadin-upload>
-    </div>
+    <paper-card>
+      <div class="card-content">
+        <div class="flexbox-container">
+          <div class="circle">U</div>
+          <div>
+            <h1>Upload</h1>
+            <p>
+              Upload a carrier text file.
+            </p>
+          </div>
+        </div>
+        <vaadin-upload
+          id="upload"
+          on-upload-before="_uploadBefore"
+          max-files="1"
+          accept="text/*"
+        >
+        </vaadin-upload>
+      </div>
+    </paper-card>
   </template>
 
   <script>
     Polymer({
       is: 'my-upload',
+      _uploadBefore: function (event) {
+        // Prevent AJAX request
+        event.preventDefault();
+
+        window.scriptTimer();
+
+        var file = event.detail.file,
+            fileIndex = this.$.upload.files.indexOf(file),
+            reader = new FileReader();
+  
+        reader.fileName = file.name;
+        reader.readAsText(file);
+  
+        reader.onload = function(event) {
+  
+          file.indeterminate = file.uploading = false;
+          file.status = '';
+          file.complete = true;
+          file.text = event.target.result;
+          file.response = event.target.result;
+
+          this._fileUploaded(file);
+        }.bind(this);
+
+        // Update UI
+        this.$.upload.set(['files', fileIndex, 'progress'], 100);
+        this.$.upload.set(['files', fileIndex, 'complete'], true);
+
+        // Fire event
+        this.fire('file-received', {file: file});
+      },
+      _fileUploaded: function (file) {
+      
+        var file_text = file.text,
+            file_name = file.name,
+            file_ext = file_name.split(".")[1].toLowerCase(),
+            ten_lines = file_text.split(/\n|\r/, 10).join("\n"),
+            delimiter = this._guessDelimiter(ten_lines)[0],
+            dsv = d3.dsvFormat(delimiter),
+            data = [];
+      
+        data = dsv.parse(file_text);
+//        window.location.hash = '#/parser';
+
+        data.column = {
+          values: {},
+          type: {}
+        };
+
+        data.columns.forEach(function (column, index) {
+
+          data.column.values[column] = d3.nest()
+            .key(function(d) { return d[column]; })
+            .map(data, d3.map)
+            .keys();
+
+          data.column.values[column] = data.column.values[column].filter(function (value) {
+
+            var str = value.replace('/', '').trim();
+
+            return (str !== 'NA' && str > "" && str)? true: false;
+          });
+
+          data.column.values[column].map(function (val) {
+
+            if (typeof data.column.type[column] === "undefined") {
+
+              data.column.type[column] = val.isType();
+            } else if (data.column.type[column] !== val.isType()) {
+              
+              data.column.type[column] = "string";
+            } else {
+
+              data.column.type[column] = val.isType();
+            }
+          });
+
+          if (data.column.type[column] === "number") {
+            
+            data.map(function (val, index) {
+
+              data[index][column] = data[index][column].toNumber();
+            });
+
+            data.column.values[column].map(function (val, index) {
+
+              data.column.values[column][index] = val.toNumber();
+            });
+          }
+        });
+
+        data.groupByNumber = d3.nest()
+        .key(function(d) { return d["Account Number"]; })
+        .key(function(d) { return d["Wireless Number"]; })
+        .entries(data);
+
+        data.account_number = {};
+
+        data.groupByNumber.forEach(function (obj) {
+
+          data.account_number[obj.key] = {};
+
+          obj.values.forEach(function (cell) {
+
+            data.account_number[obj.key][cell.key] = cell.values;
+          });
+        });
+
+        window.DP.carrier = {
+          data: data,
+        };
+
+// Hack for now to see timing.
+
+        var output = [],
+            output_row = {};
+            input = DP.carrier.data.account_number;
+
+        for (var account_number in input) {
+      
+          if (input.hasOwnProperty(account_number)) {
+
+            for (var phone_number in input[account_number]) {
+          
+              if (input[account_number].hasOwnProperty(phone_number)) {
+
+                var rows = input[account_number][phone_number];
+
+                output_row["Phone Number"] = _.pluck(rows, "Wireless Number").replace(/[^0-9]/g, '');
+                output_row["Account #"] = _.pluck(rows, "Account Number");
+                output_row["Plan"] = _.pluck(
+                  _.or(
+                  _.filter(rows, function(o) {
+                    return o["Item Description"].toLowerCase() === 'nationwide flat rate';
+                  }), _(rows)
+                  .filter(function(o) {
+                    return o["Item Category"].toLowerCase() === 'monthly charges';
+                  })
+                  .maxBy(function(o) {
+                    return o["Cost"];
+                  })), "Item Description");
+                output_row["Minutes Allotted"] = _.pluck(_.filter(rows, {"Item Category": 'Voice'}), "Allowance");
+
+_.and(
+  _.filter(number, function(o) {
+    return o["Item Category"].toLowerCase() === 'voice';}),
+  _.filter(number, function(o) {
+    return o["Item Type"].toLowerCase() === 'minutes';}),
+  _.or(
+    _.left(
+      _.pluck(rows, "Item Description"), 7
+    )
+  ))
+/*
+        "IF": [
+          {
+            "AND": [
+              "@'paste here.Item Category' = 'Voice'",
+              "@'paste here.Item Type' = 'Minutes'",
+              {
+                "OR": [
+                  {
+                    "LEFT": [
+                      "@'paste here.Item Description'",
+                      "7"
+                    ],
+                    "=": "'CALLING'"
+                  },
+                  "@'paste here.Item Description' = 'SHARED'",
+                  {
+                    "LEFT": [
+                      "@'paste here.Item Description'",
+                      "8"
+                    ],
+                    "=": "'NEW CALL'"
+                  },
+                  {
+                    "LEFT": [
+                      "@'paste here.Item Description'",
+                      "8"
+                    ],
+                    "=": "'OLD CALL'"
+                  }
+                ]
+              }
+            ]
+          },
+          "@'paste here.Used'"
+        ]
+*/
+                output.push(output_row)
+              }
+            }
+          }
+        }
+
+        window.DP.carrier.output = output;
+
+//ToDo: only plan name uses case in output.
+console.log("Script time: " + window.scriptTimer() + "ms");
+      },
+      _uploadFiles: function (file) {
+
+        var reader = new FileReader();
+  
+        reader.fileName = file.name;
+        reader.readAsText(file);
+  
+        return reader.onload = function(event) {
+  
+          return event.target.result;
+        };
+      },
+      _guessDelimiter: function (text) {
+      
+        var possibleDelimiters = text.split('').filter(function(item, i, ar) {
+          return ar.indexOf(item) === i;
+        }).join('').replace(/[a-z0-9]*/gi, '');
+      
+        return possibleDelimiters.split('').filter(function(delimiter) {
+      
+          var cache = -1;
+      
+          return text.split('\n').every(function(line) {
+      
+            if (!line) {
+              return true;
+            }
+      
+            var length = line.split(delimiter).length;
+      
+            if (cache < 0) {
+              cache = length;
+            }
+      
+            return cache === length && length > 1;
+          });
+        });
+      }
     });
   </script>
 </dom-module>

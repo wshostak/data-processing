@@ -14,25 +14,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <dom-module id="shared-styles">
   <template>
     <style>
-      @font-face {
-        font-family: 'time_to_get_a_watch';
-        src: url('fonts/timetogetawatch.eot');
-        src: url('fonts/timetogetawatch.eot?#iefix') format('embedded-opentype'),
-             url('fonts/timetogetawatch.woff2') format('woff2'),
-             url('fonts/timetogetawatch.woff') format('woff'),
-             url('fonts/timetogetawatch.ttf') format('truetype'),
-             url('fonts/timetogetawatch.svg#time_to_get_a_watch') format('svg');
-        font-weight: normal;
-        font-style: normal;
+      paper-card {
+        width: 100%;
       }
 
-      .card {
-        margin: 24px;
-        padding: 16px;
-        color: #757575;
-        border-radius: 5px;
-        background-color: #fff;
-        box-shadow: 0 2px 2px 0 rgba(0, 0, 0, 0.14), 0 1px 5px 0 rgba(0, 0, 0, 0.12), 0 3px 1px -2px rgba(0, 0, 0, 0.2);
+      .flexbox-container {
+        display: flex;
+      }
+
+      .flexbox-container > div:first-child {
+      	width: 64px;
+      	margin-right: 20px;
+      }
+
+      .card-actions {
+        text-align: right;
       }
 
       .circle {
@@ -43,15 +39,19 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         color: #555;
         border-radius: 50%;
         background: #ddd;
-        font-size: 30px;
+        font-size: 45px;
         line-height: 64px;
         font-family: 'time_to_get_a_watch';
       }
 
       h1 {
-        margin: 16px 0;
+        margin: 16px 0 0;
         color: #212121;
         font-size: 22px;
+      }
+
+      paper-card p {
+        margin-top: 0;
       }
     </style>
   </template>

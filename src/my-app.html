@@ -17,7 +17,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 <link rel="import" href="../bower_components/app-route/app-route.html">
 <link rel="import" href="../bower_components/iron-pages/iron-pages.html">
 <link rel="import" href="../bower_components/iron-selector/iron-selector.html">
-<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
 <link rel="import" href="my-icons.html">
 
 <dom-module id="my-app">
@@ -33,6 +32,10 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       app-header {
         color: #fff;
         background-color: var(--app-primary-color);
+        font-family: 'time_to_get_a_watch';
+      }
+      app-toolbar {
+        font-size: 40px;
       }
       app-header paper-icon-button {
         --paper-icon-button-ink-color: white;
@@ -81,6 +84,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
             role="main">
           <my-upload name="upload"></my-upload>
           <my-parser name="parser"></my-parser>
+          <my-edit name="edit"></my-edit>
           <my-output name="output"></my-output>
           <my-view404 name="view404"></my-view404>
         </iron-pages>
@@ -104,10 +108,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
 
       _routePageChanged: function(page) {
         this.page = page || 'upload';
-
-//        if (!this.$.drawer.persistent) {
-//          this.$.drawer.close();
-//        }
       },
 
       _pageChanged: function(page) {
