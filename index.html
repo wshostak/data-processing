@@ -27,17 +27,31 @@
 -->
     <link type="text/css" rel="stylesheet" media="all" href="css/base.css" />
 
-    <script type="text/javascript" src="javascript/loadWebComponents.js" charset="utf-8"></script>
+    <script type="text/javascript" src="javascript/load-web-components.js" charset="utf-8"></script>
     <script type="text/javascript" src="node_modules/d3/build/d3.js" charset="utf-8"></script>
     <script type="text/javascript" src="node_modules/lodash/lodash.js" charset="utf-8"></script>
     <script type="text/javascript" src="javascript/base.js" charset="utf-8"></script>
+    <script type="text/javascript" src="javascript/extend-string.js" charset="utf-8"></script>
 <!--
     <script type="text/javascript" src="node_modules/xlsx/dist/xlsx.core.min.js" charset="utf-8"></script>
-    <script src="https://cdn.jsdelivr.net/js-xlsx/0.8.0/xlsx.full.min.js"></script>
+    <script src="//cdn.jsdelivr.net/js-xlsx/0.8.0/xlsx.full.min.js"></script>
     <script src="javascript/excel-formula.js"></script>
+    <script src="javascript/parse-excel.js"></script>
 -->
 
     <link rel="import" href="src/my-app.html">
+
+<!-- Pratice Parse file -- START -- -->
+    <link rel="import" onload="handleJSONLoad(event)" href="../assets/Verizon%20Master%20Template%20-%20Formulas%20Showing/excel_data.txt">
+<!-- Pratice Parse file -- END -- -->
+
+<!-- Pratice Data file -- START -- -->
+  <link rel="import" id="praticeDataLoad" href="../assets/fixtures.txt">
+<!--
+<link rel="import" id="praticeDataLoad" href="../assets/Acct%20%26%20Wireless%20Charges%20Detail%20Summary%20Usage_201503.txt">
+-->
+<!-- Pratice Data file -- END -- -->
+
 <!-- Load excel formula files here...
     <link rel="import" onload="handleLoad(event)" href="../assets/Verizon%20Master%20Template%20-%20Formulas%20Showing/paste%20here.txt">
     <link rel="import" onload="handleLoad(event)" href="../assets/Verizon%20Master%20Template%20-%20Formulas%20Showing/Plan%20Name.txt">

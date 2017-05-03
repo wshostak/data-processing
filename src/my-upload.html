@@ -46,51 +46,68 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
   </template>
 
   <script>
+
     Polymer({
       is: 'my-upload',
+      ready: function (file) {
+
+        var file = {
+          text: document.querySelector('#praticeDataLoad').import.querySelector('body').textContent
+        };
+      
+        window.scriptTimer();
+        this._fileUploaded(file);
+      },
       _uploadBefore: function (event) {
         // Prevent AJAX request
         event.preventDefault();
 
-        window.scriptTimer();
+console.timer();
 
         var file = event.detail.file,
-            fileIndex = this.$.upload.files.indexOf(file),
             reader = new FileReader();
   
         reader.fileName = file.name;
-        reader.readAsText(file);
-  
-        reader.onload = function(event) {
-  
-          file.indeterminate = file.uploading = false;
-          file.status = '';
-          file.complete = true;
-          file.text = event.target.result;
-          file.response = event.target.result;
+        reader.onload = function (event) {
 
+          file = Object.assign({
+            indeterminate: false,
+            uploading: false,
+            status: '',
+            complete: true,
+            text: event.target.result,
+            response: event.target.result,
+          }, file);
+
+          this._updateUploadElementUI(file);
           this._fileUploaded(file);
         }.bind(this);
 
-        // Update UI
+        reader.readAsText(file);
+      },
+      _updateUploadElementUI: function (file) {
+
+        var fileIndex = this.$.upload.files.indexOf(file);
+
         this.$.upload.set(['files', fileIndex, 'progress'], 100);
         this.$.upload.set(['files', fileIndex, 'complete'], true);
 
-        // Fire event
+        // Fire vaadin-upload event
         this.fire('file-received', {file: file});
       },
       _fileUploaded: function (file) {
-      
-        var file_text = file.text,
-            file_name = file.name,
-            file_ext = file_name.split(".")[1].toLowerCase(),
-            ten_lines = file_text.split(/\n|\r/, 10).join("\n"),
-            delimiter = this._guessDelimiter(ten_lines)[0],
+
+        var tenLines = file.text.split(/\n|\r/, 10).join("\n"),
+            delimiter = this._guessDelimiter(tenLines)[0],
             dsv = d3.dsvFormat(delimiter),
-            data = [];
+            data = dsv.parse(file.text);
       
-        data = dsv.parse(file_text);
 //        window.location.hash = '#/parser';
+
+        if (typeof window.DataProcessing === "undefined") {
+        
+          window.DataProcessing = window.DP = {};
+        }
 
         data.column = {
           values: {},
@@ -139,133 +156,88 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           }
         });
 
-        data.groupByNumber = d3.nest()
-        .key(function(d) { return d["Account Number"]; })
-        .key(function(d) { return d["Wireless Number"]; })
-        .entries(data);
+        data.accountNumber = d3.nest()
+        .key(function(d) {
 
-        data.account_number = {};
+          return d["Account Number"]; 
+        })
+        .key(function(d) {
 
-        data.groupByNumber.forEach(function (obj) {
-
-          data.account_number[obj.key] = {};
-
-          obj.values.forEach(function (cell) {
-
-            data.account_number[obj.key][cell.key] = cell.values;
-          });
-        });
+          return d["Wireless Number"];
+        })
+        .object(data);
 
         window.DP.carrier = {
           data: data,
         };
 
 // Hack for now to see timing.
-
         var output = [],
-            output_row = {};
-            input = DP.carrier.data.account_number;
+            outputRow = {};
+            input = DP.carrier.data.accountNumber,
+            outputFuncs = DP.parse; //temp parse file
 
-        for (var account_number in input) {
+        for (var accountNumber in input) {
       
-          if (input.hasOwnProperty(account_number)) {
+          if (input.hasOwnProperty(accountNumber)) {
 
-            for (var phone_number in input[account_number]) {
+//console.error("***accountNumber: " + accountNumber + " ***");
+            for (var phoneNumber in input[accountNumber]) {
           
-              if (input[account_number].hasOwnProperty(phone_number)) {
+//console.error("phoneNumber: " + phoneNumber);
+              if (input[accountNumber].hasOwnProperty(phoneNumber)) {
 
-                var rows = input[account_number][phone_number];
+                var rows = input[accountNumber][phoneNumber];
+                    currentRow = {};
 
-                output_row["Phone Number"] = _.pluck(rows, "Wireless Number").replace(/[^0-9]/g, '');
-                output_row["Account #"] = _.pluck(rows, "Account Number");
-                output_row["Plan"] = _.pluck(
-                  _.or(
-                  _.filter(rows, function(o) {
-                    return o["Item Description"].toLowerCase() === 'nationwide flat rate';
-                  }), _(rows)
-                  .filter(function(o) {
-                    return o["Item Category"].toLowerCase() === 'monthly charges';
-                  })
-                  .maxBy(function(o) {
-                    return o["Cost"];
-                  })), "Item Description");
-                output_row["Minutes Allotted"] = _.pluck(_.filter(rows, {"Item Category": 'Voice'}), "Allowance");
+                for (var column in outputFuncs) {
 
-_.and(
-  _.filter(number, function(o) {
-    return o["Item Category"].toLowerCase() === 'voice';}),
-  _.filter(number, function(o) {
-    return o["Item Type"].toLowerCase() === 'minutes';}),
-  _.or(
-    _.left(
-      _.pluck(rows, "Item Description"), 7
-    )
-  ))
-/*
-        "IF": [
-          {
-            "AND": [
-              "@'paste here.Item Category' = 'Voice'",
-              "@'paste here.Item Type' = 'Minutes'",
-              {
-                "OR": [
-                  {
-                    "LEFT": [
-                      "@'paste here.Item Description'",
-                      "7"
-                    ],
-                    "=": "'CALLING'"
-                  },
-                  "@'paste here.Item Description' = 'SHARED'",
-                  {
-                    "LEFT": [
-                      "@'paste here.Item Description'",
-                      "8"
-                    ],
-                    "=": "'NEW CALL'"
-                  },
-                  {
-                    "LEFT": [
-                      "@'paste here.Item Description'",
-                      "8"
-                    ],
-                    "=": "'OLD CALL'"
+                  if (outputFuncs.hasOwnProperty(column)) {
+
+//console.error("column: " + column);
+//console.info(rows);
+                    var functionResults = PXlFn(rows, outputFuncs[column]);
+
+//console.info(functionResults);
+                    if (Array.isArray(functionResults) && functionResults.length === rows.length && !rows[0][column]) {
+
+                      currentRow[column] = functionResults.reduce(function(acc, val) {
+                        return Number(acc) + Number(val);
+                      }, 0);
+
+                      rows = rows.map(function (row) {
+
+                        row[column] = functionResults.shift();
+
+                        return row;
+                      });
+                    } else {
+                      
+                      currentRow[column] = functionResults;
+                    }
                   }
-                ]
-              }
-            ]
-          },
-          "@'paste here.Used'"
-        ]
-*/
-                output.push(output_row)
+                }
+                output.push(currentRow);
+//console.info(outputRow);
+//throw true;
+// number = DP.carrier.data.accountNumber["786080835-00001"]["201-206-0052"]
               }
             }
           }
         }
 
+console.info(output);
+console.info(DP.carrier.data.accountNumber)
         window.DP.carrier.output = output;
 
 //ToDo: only plan name uses case in output.
-console.log("Script time: " + window.scriptTimer() + "ms");
-      },
-      _uploadFiles: function (file) {
-
-        var reader = new FileReader();
-  
-        reader.fileName = file.name;
-        reader.readAsText(file);
-  
-        return reader.onload = function(event) {
-  
-          return event.target.result;
-        };
+console.timer();
       },
       _guessDelimiter: function (text) {
       
-        var possibleDelimiters = text.split('').filter(function(item, i, ar) {
-          return ar.indexOf(item) === i;
-        }).join('').replace(/[a-z0-9]*/gi, '');
+        var possibleDelimiters = text.split('').filter(function(item, index, arr) {
+              return arr.indexOf(item) === index;
+            }).join('').replace(/[a-z0-9]*/gi, '');
       
         return possibleDelimiters.split('').filter(function(delimiter) {
       

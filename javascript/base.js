@@ -1,334 +1,448 @@
+// resize electron window.
 window.resizeTo(Math.round(screen.width * .8), Math.round(screen.height * .8));
 
-window.DataProcessing = window.DP = {
-  excel: {
-    files: []
-  }
-};
-
-window.scriptTimer = function (id, clear) {
-
-  var now = performance.now();
-
-  clear = clear || false;
-  id = id || "main";
-
-  if (typeof window.scriptTimer === "undefined") {
-
-    window.scriptTimer = {};
-  }
-
-  if (typeof window.scriptTimer[id] !== "undefined") {
-
-    var then = window.scriptTimer[id];
-
-    if (clear) {
-      
-      window.scriptTimer[id] = now;
-    }
-
-    return now - then;
-  }
-
-  window.scriptTimer[id] = now;
-}
-
-String.prototype.toObject = function () {
-
-  try {
-
-    var obj_str = this.toString(),
-        obj = window;
-
-    obj_str = obj_str.split('#')[0].split('.');
-
-    for (var i = 0; i < obj_str.length; i++) obj = obj[obj_str[i]];
-
-    return obj;
-  } catch (e) {return false;}
-};
-
-String.prototype.toKey = function () {
-
-  return this.toString().split('#')[1] || undefined;
-};
-
-String.prototype.dashedCase = function () {
-
-  return this.toString().replace(/(.[A-Z])/g, function (all, letters) {
-
-  	return letters[0] + '-' + letters[1].toLowerCase();
-	});
-};
-
-String.prototype.unCamelCase = function (charcter, titlelize) {
-
-  return this.toString().replace(/(.[A-Z])/g, function (all, letters) {
-
-  	return letters[0] + (charcter || '-') + letters[1].toLowerCase().replace(/\w\S*/g, function (text) {
-
-    	return titlelize? text.charAt(0).toUpperCase() + text.substr(1).toLowerCase(): text;
-    });
-	});
-};
-
-String.prototype.camelCase = function () {
-
-  return this.toString().replace(/([ _\-][A-Z])/gi, function (all, letters) {
-
-  	return letters[1].toUpperCase();
-	});
-};
-
-String.prototype.unserialize = function () {
-
-	var str = decodeURI(this),
-	    pairs = str.split('&'),
-	    obj = {}, p, idx, ind;
-
-	for (var i = 0; i < pairs.length; i++) {
-
-		p = pairs[i].split('=');
-		idx = p[0];
-
-		if (idx.indexOf("[]") == (idx.length - 2)) {
-
-			ind = idx.substring(0, idx.length - 2)
-
-			if (obj[ind] === undefined) obj[ind] = [];
-
-			obj[ind].push(p[1]);
-		} else {
-
-			obj[idx] = p[1];
-		}
-	}
-
-	return obj;
-};
-
-String.prototype.isBoolean = function () {
-
-  try {
-
-    switch (this.trim().toLowerCase()) {
-
-      case "true":
-      case "yes":
-      case "y":
-      case true:
-        return true;
-    }
-  } catch (e) {}
-
-  return false;
-};
-
-String.prototype.toBoolean = function () {
-
-  try {
-
-    switch (this.trim().toLowerCase()) {
-
-      case "true":
-      case "yes":
-      case "y":
-      case true:
-        return true;
-
-      case "false":
-      case "no":
-      case "n":
-      case false:
-      case null:
-      case undefined:
-      case NaN:
-        return false;
-    }
-  } catch (e) {}
-
-  return false;
-};
-
-String.prototype.isNumber = function () {
-
-  try {
-
-    var str = this.trim().replace(/^0+(?=\d)/, '').replace(/\.?0+$/,""),
-        int = parseInt(str),
-        float = parseFloat(str);
-
-    if (int + '' === str) return true;
-    if (float + '' === str) return true;
-  } catch (e) {}
-
-  return false;
-};
-
-String.prototype.toNumber = function () {
-
-  try {
-
-    var str = this.trim().replace(/^0+(?=\d)/, '').replace(/\.?0+$/,""),
-        int = parseInt(str),
-        float = parseFloat(str);
-
-    if (int + '' == str) return int;
-    if (float + '' == str) return float;
-  } catch (e) {}
-
-  return 0;
-};
-
-String.prototype.isType = function () {
-
-  if (this.isBoolean()) return "boolean";
-  if (this.isNumber()) return "number";
-
-  return "string";
-};
-
-// ToDo: make own page in app, allow uploading of files.
-var cell_references_regex = /(['][^']+['][!]([$A-Z]+[$0-9]+|[$A-Z]+:[$A-Z]+)|([$A-Z]+[$0-9]+|[$A-Z]+:[$A-Z]+))/g,
-    object_references_regex = /(\[[a-zA-Z0-9 #&\?]+\]\[[a-zA-Z0-9 #&\?]+\])/g;
-
-function handleLoad (e) {
-
-  var href = decodeURIComponent(e.target.href.replace('.txt', '')).split('/'),
-      file = href[href.length -1];
-
-  DP.excel.files.push(file);
-  data = d3.tsvParse(e.path[0].import.querySelector('body').textContent);
-
-  DP.excel[file] = data;
-  data = {};
-
-  DP.excel[file].columns.forEach(function (val, index) {
-
-    data[columnToLetter(index + 1)] = val;
-  });
-
-  DP.excel[file].column_to_letter = data;
-
-  if (DP.excel.files.length > 3) startDataCrunch();
-}
-
-function columnToLetter (column) {
-
-  var temp, letter = '';
-
-  while (column > 0) {
-
-    temp = (column - 1) % 26;
-    letter = String.fromCharCode(temp + 65) + letter;
-    column = (column - temp - 1) / 26;
-  }
-
-  return letter;
-}
-
-function startDataCrunch () {
-
-  DP.excel['Account&WirelessSummary'].column_to_letter.AE = DP.excel['Account&WirelessSummary'].column_to_letter.A;
-  DP.excel['Account&WirelessSummary'].column_to_letter.AF = DP.excel['Account&WirelessSummary'].column_to_letter.B;
-
-  delete DP.excel['Account&WirelessSummary'].column_to_letter.A;
-  delete DP.excel['Account&WirelessSummary'].column_to_letter.B;
-
-  DP.excel.files.forEach(eachFile);
-
-  output()
-}
-
-_.right = function (str, len) {
-
-  len = len || str.length;
-
-  return str.slice(-len)
-}
-
-_.left = function (str, len) {
-
-  len = len || str.length;
-
-  return str.slice(0, len)
-}
-
-_.pluck = function (obj, func) {
-
-  return _.first(_.values(_.pick(_.first(obj), func)));
-}
-
-_.and = function () {
-
-  return Array.from(arguments).every(function (item) {
-
-    return !_.isEmpty(item);
-  });
-}
-_.or = function () {
-
-  return _.filter(arguments, function (item) {
-
-    return !_.isEmpty(item);
-  });
-};
-
-function eachFile (file) {
-
-//console.error("file: " + file);
-  for (var property in DP.excel[file][0]) {
-
-    if (DP.excel[file][0].hasOwnProperty(property) && DP.excel[file][0][property] && DP.excel[file][0][property][0] === '=') {
-
-//console.debug("property: " + property);
-      DP.excel[file][0][property] = replaceProperties(file, DP.excel[file], property);
-
-      var property_str = DP.excel[file][0][property];
-
-      DP.excel[file][0][property] = excelFormulaUtilities.formatFormula(DP.excel[file][0][property]).replace(/"\{/g, '{').replace(/\}"/g, '}').replace(/\}\s*(\/|\+|\-)\s*\{/g, '},"$1",{').replace(/\}\s*(=|\<>|\-)\s*([^"]*)"/g, ',"$1": "$2"}');
-
-      try {
+(function (global) {
+  "use strict";
+  
+  var scriptTimer = function (id, clear) {
+
+    var now = !!performance.now? performance.now(): new Date();
+  
+    clear = clear || false;
+    id = id || "default";
+
+    if (scriptTimer[id]) {
+  
+      var then = scriptTimer[id].start,
+          lap = scriptTimer[id].lastLap;
+
+      scriptTimer[id].lastLap = now;
+
+      if (clear) {
         
-        try {
-
-          DP.excel[file][0][property] = JSON.parse(DP.excel[file][0][property]);
-        } catch (e) {
-
-          DP.excel[file][0][property] = JSON.parse('[' + DP.excel[file][0][property] + ']');
-        }
-      } catch (e) {
-        
-        DP.excel[file][0][property] = property_str.replace('=', '');
+        scriptTimer[id] = false;
       }
-//console.log(DP.excel[file][0][property]);
+
+      return [now - then, now - lap];
+    }
+  
+    scriptTimer[id] = {
+      start: now,
+      lastLap: now
+    };
+  };
+
+  global.scriptTimer = scriptTimer;
+
+  console.timer = function (id, clear) {
+
+    _outputTime(id, scriptTimer(id, clear));
+  };
+
+  console.timerEnd = function (id) {
+    
+    _outputTime(id, scriptTimer(id, true));
+  };
+
+  console.timerLap = function (id, clear) {
+    
+    _outputTime(id, scriptTimer(id, clear), true);    
+  };
+
+  if (!console.time) {
+
+    console.time = console.timer;
+    console.timeLap = console.timerLap;
+    console.timeEnd = console.timerEnd;
+  }
+
+  var _outputTime = function (id, time, lap) {
+
+    id = id || "default";
+
+    if (time) {
+      
+      if (lap) {
+
+        console.log(id + " lap time: " + (time[1] / 1000) + " seconds.");
+      } else {
+        
+        console.log(id + " elapsed time: " + (time[0] / 1000) + " seconds.");
+  
+        if (time[0] != time[1]) {
+  
+          console.log(id + " lap time: " + (time[1] / 1000) + " seconds.");
+        }
+      }
     }
   }
-}
+})(window);
 
-function output () {
+// Building excel functions here...    
+(function(global){
+  "use strict";
 
-//console.log(DP.excel);
-console.log(JSON.stringify(DP.excel).replace(/\\"/g, "'"));
-}
+  Number.prototype.toLowerCase = function () {
 
-function replaceProperties (file, obj, property) {
+    return this;
+  };
 
-  return obj[0][property].replace(cell_references_regex, function (cell_reference) {
+  global.ParseExcelFunctionObject = global.PXlFn = function (rows, column) {
+
+    var output;
+
+/*
+try {
+console.log("column === 'string': " + (typeof column === "string"))
+console.log("rows.length === 1: " + (rows.length === 1))
+console.log("typeof rows[0]['" + column + "'] != 'undefined': " + (typeof rows[0][column] !== "undefined"))
+} catch (e) {}
+*/
+    if (typeof column === "undefined") {
+  
+      return false;
+    } else if (typeof column === "string" && rows.length === 1 && typeof rows[0][column] !== "undefined") {
+  
+      return rows[0][column];
+    } else if (typeof column === "number") {
+  
+      return column;
+    } else if (_.isPlainObject(column)) {
+  
+      var func = Object.keys(column)[0];
+
+//console.log("Calling function :" + func)
+//console.info(column[func])
+      return XlFn[func].apply({rows: rows}, column[func]);
+    } else if (Array.isArray(column)) {
+  
+      return column;
+    } else if (output = column.match(/^\[([^\]]*)\]$/)) {
+  
+      return output[1];
+    }
+  
+    return column;
+  };
+
+  global.ExcelFunctions = global.XlFn = {
+
+    REGEX: function (column, substr, newSubstr) {
+
+      var rows = this.rows || this;
+    
+      column = PXlFn(rows, column);
+    
+      substr = substr.split("/");
+      newSubstr = newSubstr || '';
+    
+      var pattern = substr[1],
+          flags = substr[2];
+    
+      return XlFn.PULLVAL.apply(rows, [column]).replace(new RegExp(pattern, flags), newSubstr);
+    },
+    PULLVAL: function (func) {
+
+      var rows = this.rows || this;
+
+      return _.first(_.values(_.pick(_.first(rows), func))) || "";
+    },
+    IFEACH: function (conditional, yes, no) {
+
+      var rows = this.rows || this;
+
+      var val = rows.map(function (row) {
+
+        return XlFn.IF.apply([row], [conditional, yes, no]);
+      });
+
+      return val;
+    },
+    IF: function (conditional, yes, no) {
+
+      var rows = this.rows || this;
+
+      var conditionalResult = PXlFn(rows, conditional);
+    
+      if (Array.isArray(conditionalResult) && !_.isEmpty(conditionalResult)) {
+
+        var yesResult = PXlFn(conditionalResult, yes);
+
+        if ((Array.isArray(yesResult) && !_.isEmpty(yesResult) && typeof yesResult === "function") || conditionalResult[0][yesResult]) {
           
-    var cell_reference_array = cell_reference.replace(/['$]/g, '').split('!'),
-        columns = cell_reference_array.pop().replace(/[^A-Z:]/g, '').split(':'),
-        column_one = columns.shift(),
-        column_two = columns.shift() || false,
-        sheet = cell_reference_array.pop() || file,
-        column_one_output = columnOutpuStr(column_one, sheet),
-        output_str = (column_two && column_two !== column_one)? column_one_output + ':' + columnOutpuStr(column_two, sheet): column_one_output; 
+          var output = XlFn.PULLVAL.apply(conditionalResult, [yesResult]);
 
-    return output_str;
-  });
-}
+          return output;
+        } else if (Array.isArray(yesResult) && yesResult.length === 1) {
+          
+          return PXlFn(conditionalResult, yesResult[0]) || "";
+        }
+    
+        return PXlFn(conditionalResult, yesResult) || "";
+      }
+    
+      if (no) {
+        var noResult = PXlFn(rows, no);
+      
+        if ((Array.isArray(noResult) && !_.isEmpty(noResult) && typeof yesResult === "function") || rows[0][noResult]) {
+      
+          var output = XlFn.PULLVAL.apply(rows, [noResult]);
 
-function columnOutpuStr (column, sheet) {
+          return output;
+        } else if (Array.isArray(noResult) && noResult.length === 1) {
+          
+          return PXlFn(conditionalResult, noResult[0]) || "";
+        }
+      
+        return PXlFn(conditionalResult, noResult) || "";
+      }
 
-  return "@'" + sheet + "." + (DP.excel[sheet].column_to_letter[column] || column) + "'";
+      return "";
+    },
+    EQUAL: function (leftHandSide, rightHandSide) {
+
+      var rows = this.rows || this;
+
+      leftHandSide = PXlFn(rows, leftHandSide);
+      rightHandSide = PXlFn(rows, rightHandSide);
+
+      return rows.filter(function (row) {
+    
+        var lhs = PXlFn([row], leftHandSide),
+            rhs = PXlFn([row], rightHandSide);
+
+        return lhs.toString().toLowerCase() === rhs.toString().toLowerCase();
+      });
+    },
+    NOTEQUAL: function (leftHandSide, rightHandSide) {
+
+      var rows = this.rows || this;
+
+      leftHandSide = PXlFn(rows, leftHandSide);
+      rightHandSide = PXlFn(rows, rightHandSide);
+
+      return rows.filter(function (row) {
+    
+        var lhs = PXlFn([row], leftHandSide),
+            rhs = PXlFn([row], rightHandSide);
+    
+//console.log("lhs: " + lhs)
+//console.log("rhs: " + rhs)
+//console.log("Number(lhs): " + Number(lhs))
+//console.log("Number(rhs): " + Number(rhs))
+//console.log("Number(lhs) > Number(rhs): " + (Number(lhs) > Number(rhs)))
+//console.log("Number(lhs) > Number(rhs): " + (Number(lhs) > Number(rhs)))
+        return lhs.toString().toLowerCase() !== rhs.toString().toLowerCase();
+      });
+    },
+    GREATER: function (leftHandSide, rightHandSide) {
+
+      var rows = this.rows || this;
+
+      leftHandSide = PXlFn(rows, leftHandSide);
+      rightHandSide = PXlFn(rows, rightHandSide);
+
+      return rows.filter(function (row) {
+    
+        var lhs = PXlFn([row], leftHandSide),
+            rhs = PXlFn([row], rightHandSide);
+    
+        return Number(lhs) > Number(rhs);
+      });
+    },
+    FIND: function (searchValue, fromString, fromIndex, greaterThenIndex) {
+
+      var rows = this.rows || this;
+
+      searchValue = PXlFn(rows, searchValue);
+      fromString = PXlFn(rows, fromString);
+      fromIndex = fromIndex || 0;
+      greaterThenIndex = greaterThenIndex || -1;
+
+      return rows.filter(function (row) {
+    
+        var searchVal = PXlFn([row], searchValue),
+            fromStr = PXlFn([row], fromString);
+    
+        return fromStr.indexOf(searchVal, fromIndex) > greaterThenIndex;
+      });
+    },
+    DIVIDE: function (dividend, divisor) {
+
+      var rows = this.rows || this;
+
+      dividend = PXlFn(rows, dividend);
+      divisor = PXlFn(rows, divisor);
+
+      return rows.map(function (row) {
+    
+        var numerator = PXlFn([row], dividend),
+            denominator = PXlFn([row], divisor);
+    
+        return Number(numerator) / Number(denominator);
+      });
+    },
+    MULTIPLY: function (multiplier, multiplicand) {
+
+      var rows = this.rows || this;
+
+      multiplier = PXlFn(rows, multiplier);
+      multiplicand = PXlFn(rows, multiplicand);
+
+      return rows.map(function (row) {
+    
+        var firstFactor = PXlFn([row], multiplier),
+            secondFactor = PXlFn([row], multiplicand);
+    
+        return Number(firstFactor) * Number(secondFactor);
+      });
+    },
+    ADD: function (augend, addend) {
+
+      var rows = this.rows || this;
+
+      augend = PXlFn(rows, augend);
+      addend = PXlFn(rows, addend);
+
+      return rows.map(function (row) {
+    
+        var firstSummand = PXlFn([row], augend),
+            secondSummand = PXlFn([row], addend);
+    
+        return Number(firstSummand) + Number(secondSummand);
+      });
+    },
+    MINUS: function (minuend, subtrahend) {
+
+      var rows = this.rows || this;
+
+      minuend = PXlFn(rows, minuend);
+      subtrahend = PXlFn(rows, subtrahend);
+
+      return rows.map(function (row) {
+    
+        var firstNumber = PXlFn([row], minuend),
+            secondNumber = PXlFn([row], subtrahend);
+    
+        return Number(firstNumber) - Number(secondNumber);
+      });
+    },
+    MAX: function (column) {
+
+      var rows = this.rows || this;
+    
+      column = PXlFn(rows, column);
+
+      return _.maxBy(rows, function(o) {
+        return o[column];
+      });
+    },
+    SUM: function () {
+    
+      var args = Array.from(arguments),
+          rows = this.rows || this,
+          resultsColumn = args.map(function (arg) {
+        
+            var column = PXlFn(rows, arg);
+      
+            return d3.sum(d3.map(rows, function(d) { return d[column]; }).keys());
+          });
+
+      return _.sum(resultsColumn);
+    },
+    AND: function () {
+
+      var args = Array.from(arguments),
+          rows = this.rows || this;
+
+      return rows.filter(function (row) {
+    
+        return args.every(function (item) {
+    
+          return !_.isEmpty(PXlFn([row], item));
+        });
+
+      });
+    },
+    OR: function () {
+
+      var args = Array.from(arguments),
+          rows = this.rows || this;
+
+      return rows.filter(function (row) {
+
+        return _.filter(args, function (item) {
+      
+          return !_.isEmpty(PXlFn([row], item));
+        })[0];
+      });
+    },
+    NOR: function () {
+
+      var args = Array.from(arguments),
+          rows = this.rows || this;
+
+      return rows.filter(function (row) {
+    
+        row = args.every(function (item) {
+    
+          return _.isEmpty(PXlFn([row], item));
+        });
+
+        return row;
+      });
+    },
+    NAND: function () {
+
+      var args = Array.from(arguments),
+          rows = this.rows || this;
+
+      return rows.filter(function (row) {
+
+        return _.filter(args, function (item) {
+      
+          return _.isEmpty(PXlFn([row], item));
+        })[0];
+      });
+    },
+    RIGHT: function (column, str) {
+
+      var rows = this.rows || this;
+
+      column = PXlFn(rows, column);
+      str = PXlFn(rows, str);
+
+      return rows.filter(function (row) {
+
+        var columnValue = PXlFn([row], column);
+
+        return _.endsWith(columnValue.toLowerCase(), str.toLowerCase());
+      });
+    },
+    LEFT: function (column, str) {
+
+      var rows = this.rows || this;
+
+      column = PXlFn(rows, column);
+      str = PXlFn(rows, str);
+
+      return rows.filter(function (row) {
+
+        var columnValue = PXlFn([row], column);
+
+        return _.startsWith(columnValue.toLowerCase(), str.toLowerCase());
+      });
+    }
+  };
+})(window);
+
+// Load Pratice carrier parse file.
+function handleJSONLoad (e) {
+
+  if (typeof window.DataProcessing === "undefined") {
+  
+    window.DataProcessing = window.DP = {};
+  }
+
+  window.DP.parse = JSON.parse(e.path[0].import.querySelector('body').textContent);
 }

@@ -1,481 +1,1063 @@
-//console.dir(_)
-//console.dir(d3)
-//console.log(Object.getPrototypeOf( DP.carrier_data[1]["Bill Cycle Date"])); ** Not quite there
-//Object.keys(_);
-//_.before.length - number ofr args expected
-//getParamNames(_.before)
-//open /Applications/Google\ Chrome.app --args --allow-file-access-from-files
-
-/*
-var groupByNumber = d3.nest()
-  .key(function(d) { return d["Wireless Number"]; })
-  .entries(DP.carrier.data);
-
-var uniqItems = d3.nest()
-    .key(function(d) { return d["Wireless Number"]; })
-    .map(DP.carrier.data, d3.map)
-    .keys();
-*/
-
-// Acct & Wireless Charges Detail Summary Usage_201702.txt
 {
-  "key": "201-273-1571",
-  "values": [
+  "Phone Number": {
+    "REGEX": [
+      "[Wireless Number]",
+      "/[^0-9]/g"
+    ]
+  },
+  "Account": {
+    "PULLVAL": [
+      "[Account Number]"
+    ]
+  },
+  "Plan": {
+    "IF": [
+      {
+        "EQUAL": [
+          "[Item Description]",
+          "NATIONWIDE FLAT RATE"
+        ]
+      },
+      "[Item Description]",
+      {
+        "IF": [
+          {
+            "AND": [
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Monthly Charges"
+                ]
+              },
+              {
+                "MAX": [
+                  "[Cost]"
+                ]
+              }
+            ]
+          },
+          "[Item Description]"
+        ]
+      }
+    ]
+  },
+  "Minutes Allotted": {
+    "IF": [
+      {
+        "EQUAL": [
+          "[Item Category]",
+          "Voice"
+        ]
+      },
+      {
+        "SUM": [
+          "[Allowance]"
+        ]
+      }
+    ]
+  },
+  "Minutes Used": {
+    "IF": [
+      {
+        "AND": [
+          {
+            "EQUAL": [
+              "[Item Category]",
+              "Voice"
+            ]
+          },
+          {
+            "EQUAL": [
+              "[Item Type]",
+              "Minutes"
+            ]
+          },
+          {
+            "OR": [
+              {
+                "LEFT": [
+                  "[Item Description]",
+                  "CALLING"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Description]",
+                  "SHARED"
+                ]
+              },
+              {
+                "LEFT": [
+                  "[Item Description]",
+                  "NEW CALL"
+                ]
+              },
+              {
+                "LEFT": [
+                  "[Item Description]",
+                  "OLD CALL"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "SUM": [
+          "[Used]"
+        ]
+      }
+    ]
+  },
+  "M2M": {
+    "IFEACH": [
+      {
+        "AND": [
+          {
+            "EQUAL": [
+              "[Item Category]",
+              "Voice"
+            ]
+          },
+          {
+            "LEFT": [
+              "[Item Description]",
+              "mobile"
+            ]
+          }
+        ]
+      }
+      "[Used]"
+    ]
+  },
+  "NW": {
+    "IF": [
+      {
+        "AND": [
+          {
+            "EQUAL": [
+              "[Item Category]",
+              "Voice"
+            ]
+          },
+          {
+            "LEFT": [
+              "[Item Description]",
+              "Night"
+            ]
+          }
+        ]
+      }
+      "[Used]"
+    ]
+  },
+  "Charges Access": {
+    "IF": [
+      {
+        "EQUAL": [
+          "[Item Category]",
+          "Monthly Charges"
+        ]
+      },
+      {
+        "SUM": [
+          "[Cost]"
+        ]
+      }
+    ]
+  },
+  "Charges Equipment": {
+    "IF": [
+      {
+        "OR": [
+          {
+            "EQUAL": [
+              "[Item Category]",
+              "Equipment Charges"
+            ]
+          },
+          {
+            "EQUAL": [
+              "[Item Description]",
+              "DEVICE NOT RETURNED"
+            ]
+          }
+        ]
+      },
+      {
+        "SUM": [
+          "[Cost]"
+        ]
+      }
+    ]
+  },
+  "Charges Directory Assistance": {
+    "IFEACH": [
+      {
+        "AND": [
+          {
+            "EQUAL": [
+              "[Item Category]",
+              "Voice"
+            ]
+          },
+          {
+            "OR": [
+              {
+                "LEFT": [
+                  "[Item Description]",
+                  "411"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Description]",
+                  "Local Exchange Carrier"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+      "[Cost]"
+    ]
+  },
+  "Charges Long Distance": {
+    "IFEACH": [
+      {
+        "LEFT": [
+          "[Item Description]",
+          "Long D"
+        ]
+      },
+      "[Cost]"
+    ]
+  },
+  "Charges International": {
+    "IFEACH": [
+      {
+        "AND": [
+          {
+            "OR": [
+              {
+                "LEFT": [
+                  "[Item Description]",
+                  "international minutes"
+                ]
+              },
+              {
+                "LEFT": [
+                  "[Item Description]",
+                  "international long"
+                ]
+              }
+            ]
+          },
+          {
+            "EQUAL": [
+              "[Allowance]",
+              "NA"
+            ]
+          },
+          {
+            "OR": [
+              {
+                "EQUAL": [
+                  "[Used]",
+                  "NA"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Used]",
+                  0
+                ]
+              }
+            ]
+          },
+          {
+            "OR": [
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Voice"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Additional Services"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Other"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "International"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Usage While In The Us (Pay-As-You-Go)"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Usage While In The Us (Plan)"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+      "[Cost]"
+    ]
+  },
+  "Charges Premium": {
+    "IFEACH": [
+      {
+        "OR": [
+          {
+            "LEFT": [
+              "[Item Category]",
+              "purchas"
+            ]
+          },
+          {
+            "FIND": [
+              "download",
+              "[Item Description]"
+            ]
+          }
+        ]
+      },
+      "[Cost]"
+    ]
+  },
+  "Texts Total": {
+    "IFEACH": [
+      {
+        "AND": [
+          {
+            "NOR": [
+              {
+                "LEFT": [
+                  "[Item Category]",
+                  "purchas"
+                ]
+              },
+              {
+                "FIND": [
+                  "download",
+                  "[Item Description]"
+                ]
+              }
+            ]
+          },
+          {
+            "OR": [
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Messaging"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Type]",
+                  "Messages"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "[Used]"
+    ]
+  },
+  "Roaming Minutes": {
+    "IFEACH": [
+      {
+        "AND": [
+          {
+            "OR": [
+              {
+                "LEFT": [
+                  "[Item Category]",
+                  "Roaming"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Other"
+                ]
+              },
+              {
+                "LEFT": [
+                  "[Item Category]",
+                  "Additional"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "International"
+                ]
+              },
+              {
+                "LEFT": [
+                  "[Item Category]",
+                  "Usage While Traveling Outside"
+                ]
+              }
+            ]
+          },
+          {
+            "OR": [
+              {
+                "LEFT": [
+                  "[Item Type]",
+                  "Min"
+                ]
+              },
+              {
+                "RIGHT": [
+                  "[Item Type]",
+                  "Min"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "[Used]"
+    ]
+  },
+  "Domestic MB": {
+    "IFEACH": [
+      {
+        "EQUAL": [
+          "[Item Category]",
+          "Data"
+        ]
+      },
+      {
+        "IF": [
+          {
+            "LEFT": [
+              "[Item Type]",
+              "Kil"
+            ]
+          },
+          {
+            "DIVIDE": [
+              "[Used]",
+              1024
+            ]
+          },
+          {
+            "IF": [
+              {
+                "LEFT": [
+                  "[Item Type]",
+                  "Meg"
+                ]
+              },
+              "[Used]",
+              {
+                "IF": [
+                  {
+                    "LEFT": [
+                      "[Item Type]",
+                      "Gig"
+                    ]
+                  },
+                  {
+                    "MULTIPLY": [
+                      "[Used]",
+                      1024
+                    ]
+                  },
+                  {
+                    "IF": [
+                      {
+                        "LEFT": [
+                          "[Item Type]",
+                          "Mob"
+                        ]
+                      },
+                      "[Used]"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "FreeBee Data": {
+    "IFEACH": [
+      {
+        "LEFT": [
+          "[Item Description]",
+          "FreeBee"
+        ]
+      },
+      "[Domestic MB]"
+    ]
+  },
+  "Roaming Texts": {
+    "IFEACH": [
+      {
+        "NOTEQUAL": [
+          "[FreeBee Data]",
+          ""
+        ]
+      },
+      "[Used]"
+    ]
+  },
+  "Charges Roaming": {
+    "IFEACH": [
+      {
+        "OR": [
+          {
+            "EQUAL": [
+              "[Item Description]",
+              "Other Call Charges"
+            ]
+          },
+          {
+            "NOR": [
+              {
+                "EQUAL": [
+                  "[Roaming Minutes]",
+                  ""
+                ]
+              },
+              {
+                "NOTEQUAL": [
+                  "[Charges International]",
+                  ""
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "[Cost]"
+    ]
+  },
+  "Charges Text": {
+    "IFEACH": [
+      {
+        "AND": [
+          {
+            "EQUAL": [
+              "[Charges Premium]",
+              ""
+            ]
+          },
+          {
+            "OR": [
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Messaging"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Type]",
+                  "Messages"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "[Cost]"
+    ]
+  },
+  "Charges Text Roaming": {
+    "IF": [
+      {
+        "AND": [
+          {
+            "OR": [
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Roaming"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Other"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Additional Services"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "International"
+                ]
+              },
+              {
+                "LEFT": [
+                  "[Item Category]",
+                  "Usage While Traveling Outside"
+                ]
+              }
+            ]
+          },
+          {
+            "OR": [
+              {
+                "LEFT": [
+                  "[Item Type]",
+                  "Messages"
+                ]
+              },
+              {
+                "LEFT": [
+                  "[Item Type]",
+                  "global MMS"
+                ]
+              },
+              {
+                "LEFT": [
+                  "[Item Type]",
+                  "global msg"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "SUM": [
+          "[Cost]"
+        ]
+      }
+    ]
+  },
+  "MB used for Decisions and DCAM": {
+    "MINUS": [
+      "[Domestic MB]",
+      "[FreeBee Data]"
+    ]
+  },
+  "Roaming MB": {
+    "IFEACH": [
+      {
+        "LEFT": [
+          "[Item Type]",
+          "Kilo"
+        ]
+      },
+      {
+        "DIVIDE": [
+          "[Used]",
+          "1024"
+        ]
+      },
+      {
+        "IF": [
+          {
+            "LEFT": [
+              "[Item Type]",
+              "Giga"
+            ]
+          },
+          {
+            "MULTIPLY": [
+              "[Used]",
+              "1024"
+            ]
+          },
+          {
+            "IF": [
+              {
+                "EQUAL": [
+                  "[Billable]",
+                  "NA"
+                ]
+              },
+              "[Used]",
+              {
+                "IF": [
+                  {
+                    "GREATER": [
+                      "[Billable]",
+                      "[Used]"
+                    ]
+                  },
+                  {
+                    "ADD": [
+                      "[Billable]",
+                      "[Allowance]"
+                    ]
+                  },
+                  "[Used]"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "Charges Data Total": {
+    "IFEACH": [
+      {
+        "NOTEQUAL": [
+          "[Domestic MB]",
+          ""
+        ]
+      },
+      "[Cost]"
+    ]
+  },
+  "Charges Data Roaming": {
+    "IFEACH": [
+      {
+        "AND": [
+          {
+            "NOTEQUAL": [
+              "[Allowance]",
+              "NA"
+            ]
+          },
+          {
+            "OR": [
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Roaming"
+                ]
+              },
+              {
+                "LEFT": [
+                  "[Item Type]",
+                  "global mb"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Additional Services"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Other"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "International"
+                ]
+              },
+              {
+                "LEFT": [
+                  "[Item Category]",
+                  "Usage While Traveling Outside"
+                ]
+              }
+            ]
+          },
+          {
+            "OR": [
+              {
+                "LEFT": [
+                  "[Item Type]",
+                  "global mb"
+                ]
+              },
+              {
+                "RIGHT": [
+                  "[Item Type]",
+                  "bytes"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "[Cost]"
+    ]
+  },
+  "Taxes Total": {
+    "IF": [
+      {
+        "LEFT": [
+          "[Item Category]",
+          "Taxes"
+        ]
+      },
+      {
+        "SUM": [
+          "[Cost]"
+        ]
+      }
+    ]
+  },
+  "Voice Overages": {
+    "IFEACH": [
+      {
+        "AND": [
+          {
+            "EQUAL": [
+              "[Item Category]",
+              "Voice"
+            ]
+          },
+          {
+            "LEFT": [
+              "[Item Type]",
+              "Min"
+            ]
+          }
+        ]
+      },
+      "[Cost]"
+    ]
+  },
+  "Other Charges and Credits": {
+    "IF": [
+      {
+        "AND": [
+          {
+            "OR": [
+              {
+                "LEFT": [
+                  "[Item Category]",
+                  "Other"
+                ]
+              },
+              {
+                "EQUAL": [
+                  "[Item Category]",
+                  "Roaming"
+                ]
+              }
+            ]
+          },
+          {
+            "EQUAL": [
+              "[Charges International]",
+              ""
+            ]
+          },
+          {
+            "EQUAL": [
+              "[Charges Text]",
+              ""
+            ]
+          },
+          {
+            "EQUAL": [
+              "[Roaming MB]",
+              ""
+            ]
+          },
+          {
+            "EQUAL": [
+              "[M2M]",
+              ""
+            ]
+          },
+          {
+            "EQUAL": [
+              "[FreeBee Data]",
+              ""
+            ]
+          },
+          {
+            "EQUAL": [
+              "[Texts Total]",
+              ""
+            ]
+          }
+        ]
+      },
+      {
+        "SUM": [
+          "[Cost]"
+        ]
+      }
+    ]
+  },
+  "Adjustments": {
+    "IF": [
+      {
+        "AND": [
+          {
+            "EQUAL": [
+              "[Item Category]",
+              "Adjustments"
+            ]
+          },
+          {
+            "NOTEQUAL": [
+              "[Wireless Number]",
+              "NA"
+            ]
+          }
+        ]
+      },
+      {
+        "SUM": [
+          "[Cost]"
+        ]
+      }
+    ]
+  },
+  "Usage": {
+    "SUM": [
+      "[Charges Directory Assistance]",
+      "[Charges Long Distance]",
+      "[Charges International]",
+      "[Charges Roaming]",
+      "[Charges Data Roaming]",
+      "[Charges Text]",
+      "[Charges Premium]",
+      "[Charges Data Total]",
+      "[Voice Overages]"
+    ]
+  },
+  "SubTotal": {
+    "SUM": [
+      "[Cost]"
+    ]
+  },
+  "ETF": {
+    "IF": [
+      {
+        "AND": [
+          {
+            "LEFT": [
+              "[Item Category]",
+              "Other"
+            ]
+          },
+          {
+            "LEFT": [
+              "[Item Description]",
+              "Early Term"
+            ]
+          }
+        ]
+      },
+      {
+        "SUM": [
+          "[Cost]"
+        ]
+      }
+    ]
+  },
+  "Spread Adjustments": { // Double check equation with Matt.
+    "DIVIDE": [
+      {
+        "SUMIFS": [
+          "[Cost]",
+          {
+            "EQUAL": [
+              "[Wireless Number]",
+              "NA"
+            ]
+          },
+          {
+            "NOTEQUAL": [
+              "[Item Category]",
+              "Payments"
+            ]
+          }
+        ]
+      },
+      {
+        "ADD": [
+          {
+            "COUNTIF": [
+              {
+                "LESS": [
+                  "[Adjustments]",
+                  0
+                ]
+              }
+            ]
+          },
+          {
+            "COUNTIF": [
+              {
+                "GREATER": [
+                  "[Adjustments]",
+                  0
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "Late Fees": [
     {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": " ",
-      "Cost Center": " ",
-      "User ID": "NA",
-      "Item Category": "Adjustments",
-      "Date": "03/17/15",
-      "Item Type": "NA",
-      "Item Description": "TXT MSG USAGE CHARGE/CREDIT for 201-273-1571 on 03/17/15 on 2015-03-17",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "NA",
-      "Allowance": "NA",
-      "Used": "NA",
-      "Billable": "NA",
-      "Cost": "-21.50"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "Monthly Charges",
-      "Date": "03/24/15 - 04/23/15",
-      "Item Type": "NA",
-      "Item Description": "FLEXIBLE BUSINESS SMRTPHN 10GB",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "Plan",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Month in Adv",
-      "Allowance": "NA",
-      "Used": "NA",
-      "Billable": "NA",
-      "Cost": "105.00"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "Monthly Charges",
-      "Date": "03/24/15 - 04/23/15",
-      "Item Type": "NA",
-      "Item Description": "21% ACCESS DISCOUNT",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Month in Adv",
-      "Allowance": "NA",
-      "Used": "NA",
-      "Billable": "NA",
-      "Cost": "-22.05"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "Monthly Charges",
-      "Date": "03/24/15 - 04/23/15",
-      "Item Type": "NA",
-      "Item Description": "WORLD MESSAGING UNLIMITED",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "Feature",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Month in Adv",
-      "Allowance": "NA",
-      "Used": "NA",
-      "Billable": "NA",
-      "Cost": "5.00"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "VZW Surcharges",
-      "Date": " ",
-      "Item Type": "NA",
-      "Item Description": "Fed Universal Service Charge",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Monthly Char",
-      "Allowance": "NA",
-      "Used": "NA",
-      "Billable": "NA",
-      "Cost": "1.54"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "VZW Surcharges",
-      "Date": " ",
-      "Item Type": "NA",
-      "Item Description": "Regulatory Charge",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Monthly Char",
-      "Allowance": "NA",
-      "Used": "NA",
-      "Billable": "NA",
-      "Cost": "0.18"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "VZW Surcharges",
-      "Date": " ",
-      "Item Type": "NA",
-      "Item Description": "Administrative Charge",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Monthly Char",
-      "Allowance": "NA",
-      "Used": "NA",
-      "Billable": "NA",
-      "Cost": "0.95"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "VZW Surcharges",
-      "Date": " ",
-      "Item Type": "NA",
-      "Item Description": "Omaha City Occupation Surchg",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Monthly Char",
-      "Allowance": "NA",
-      "Used": "NA",
-      "Billable": "NA",
-      "Cost": "2.18"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "Taxes, Governmental Surcharges and Fees",
-      "Date": " ",
-      "Item Type": "NA",
-      "Item Description": "Enhance Wireless 911 Surcharge",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Monthly Char",
-      "Allowance": "NA",
-      "Used": "NA",
-      "Billable": "NA",
-      "Cost": "0.45"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "Taxes, Governmental Surcharges and Fees",
-      "Date": " ",
-      "Item Type": "NA",
-      "Item Description": "NE Telecom Relay Surcharge",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Monthly Char",
-      "Allowance": "NA",
-      "Used": "NA",
-      "Billable": "NA",
-      "Cost": "0.02"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "Taxes, Governmental Surcharges and Fees",
-      "Date": " ",
-      "Item Type": "NA",
-      "Item Description": "NE Universal Service",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Monthly Char",
-      "Allowance": "NA",
-      "Used": "NA",
-      "Billable": "NA",
-      "Cost": "1.72"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "Taxes, Governmental Surcharges and Fees",
-      "Date": " ",
-      "Item Type": "NA",
-      "Item Description": "NE State Sales Tax",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Monthly Char",
-      "Allowance": "NA",
-      "Used": "NA",
-      "Billable": "NA",
-      "Cost": "1.96"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "Taxes, Governmental Surcharges and Fees",
-      "Date": " ",
-      "Item Type": "NA",
-      "Item Description": "Omaha City Sales Tax",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Monthly Char",
-      "Allowance": "NA",
-      "Used": "NA",
-      "Billable": "NA",
-      "Cost": "0.54"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "Voice",
-      "Date": " ",
-      "Item Type": "MINUTES",
-      "Item Description": "CALLING PLAN",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Monthly Char",
-      "Allowance": "unlimited",
-      "Used": "735.0000",
-      "Billable": "NA",
-      "Cost": "0.00"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "Messaging",
-      "Date": " ",
-      "Item Type": "MESSAGES",
-      "Item Description": "TEXT",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Monthly Char",
-      "Allowance": "unlimited",
-      "Used": "163.0000",
-      "Billable": "NA",
-      "Cost": "0.00"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "Messaging",
-      "Date": " ",
-      "Item Type": "MESSAGES",
-      "Item Description": "UNLIMITED M2M TEXT",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Monthly Char",
-      "Allowance": "unlimited",
-      "Used": "8.0000",
-      "Billable": "NA",
-      "Cost": "0.00"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "Messaging",
-      "Date": " ",
-      "Item Type": "MESSAGES",
-      "Item Description": "PICTURE & VIDEO",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Monthly Char",
-      "Allowance": "unlimited",
-      "Used": "4.0000",
-      "Billable": "NA",
-      "Cost": "0.00"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "Data",
-      "Date": " ",
-      "Item Type": "GIGABYTES",
-      "Item Description": "GIGABYTE USAGE",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "NA",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "NA",
-      "Usage Period": "Previous Pla",
-      "Allowance": "NA",
-      "Used": "0.0010",
-      "Billable": "NA",
-      "Cost": "0.00"
-    },
-    {
-      "ECPD Profile ID": "649172",
-      "Bill Cycle Date": "Mar 23, 2015",
-      "Account Number": "786080835-00001",
-      "Invoice Number": "9742861221",
-      "Wireless Number": "201-273-1571",
-      "User Name": "Chris Smart",
-      "Cost Center": "450-816-23977-23977 (1816-102164.117",
-      "User ID": "NA",
-      "Item Category": "Data",
-      "Date": " ",
-      "Item Type": "GIGABYTES",
-      "Item Description": "GIGABYTE USAGE",
-      "Vendor Name/Contact Number": " ",
-      "Share Description": "Shared Usage",
-      "Share Voice": "NA",
-      "Share Messaging": "NA",
-      "Share Data": "82002",
-      "Usage Period": "Monthly Char",
-      "Allowance": "10 (shared)",
-      "Used": "0.1070",
-      "Billable": "NA",
-      "Cost": "0.00"
+      "DIVIDE": [
+        {
+          "SUMIFS": [
+            "[Cost]",
+            {
+              "EQUAL": [
+                "[Wireless Number]",
+                "NA"
+              ]
+            },
+            {
+              "EQUAL": [
+                "[Item Description]",
+                "Late Fee"
+              ]
+            }
+          ]
+        },
+        {
+          "COUNT": [
+            {
+              "NOTEQUAL": [
+                "[SubTotal]",
+                0
+              ]
+            }
+          ]
+        }
+      ]
     }
-  ]
+  ],
+  "Total": {
+    "ADD": [
+      "[SubTotal]",
+      "[Spread Adjustments]",
+      "[Late Fees]"
+    ]
+  }
 }
